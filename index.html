@@ -1143,24 +1143,21 @@ upMetrics();renderDrawHist();loadDemo(true);route();
 </body>
 </html>
 
-<script>
-function checkIn() {
-  const data = {
-    name: document.getElementById("name").value,
-    facode: document.getElementById("facode").value
-  };
-
-  fetch("https://script.google.com/macros/s/AKfycbwjcN17aoD8x9bkyYNiBveK8ppJQ6eumxx63woVQLygzCMllPaikIaCpscm09IJ9Ke7aw/exec", {
-    method: "POST",
-    body: JSON.stringify(data)
+fetch("https://script.google.com/macros/s/AKfycbwg_zfIGbHM8sInTmDtqyT62dNPxkduh0J2OMej6-PdYeXEkWuweCnnVRQgDhaQpk0oeA/exec", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    facode: document.getElementById("facode").value,
+    name: document.getElementById("name").value
   })
-  .then(res => res.json())
-  .then(response => {
-    alert("Check-in successful!");
-  })
-  .catch(error => {
-    console.error(error);
-    alert("Error submitting check-in");
-  });
-}
-</script>
+})
+.then(res => res.json())
+.then(data => {
+  alert("Check-in successful!");
+})
+.catch(err => {
+  console.error(err);
+  alert("Error submitting check-in");
+});
