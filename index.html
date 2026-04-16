@@ -1142,24 +1142,3 @@ upMetrics();renderDrawHist();loadDemo(true);route();
 </script>
 </body>
 </html>
-function checkIn() {
-  const facode = document.getElementById("facode").value;
-
-  fetch("https://script.google.com/macros/s/AKfycbxzcqb3mSJ33nybvFrVgk0G8FCBx1oziOJX9j1shsJ0Qbkn57ZFPFiu7hT5lmVlnbTnEQ/exec", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      facode: facode
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    alert("Check-in successful!");
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Check-in failed");
-  });
-}
