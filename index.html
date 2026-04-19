@@ -320,7 +320,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
   <div class="gs-card">
     <div class="gs-card-title">Enter your FA code to find your seat</div>
     <input class="gs-input" type="text" id="gs-name" placeholder="e.g. FA001" autocomplete="off" style="text-transform:uppercase;letter-spacing:.12em" onkeydown="if(event.key==='Enter')gsLookup()"/>
-    <button class="gs-btn" onclick="gsLookup()"><span id="gs-btn-text">Find My Table</span></button>
+    <button class="gs-btn" onclick="gsLookup()"><span id="gs-btn-text">Check in</span></button>
     <div class="gs-err" id="gs-err"></div>
     <div class="gs-result" id="gs-result">
       <div class="divider"><span>✦</span></div>
@@ -773,7 +773,7 @@ function gsLookup(){
   document.getElementById('gs-btn-text').textContent='Searching...';
   checkInByFA(v,
     function(data){
-      document.getElementById('gs-btn-text').textContent='Find My Table';
+      document.getElementById('gs-btn-text').textContent='Check in';
       var g=guests.find(function(x){return (x.facode||'').toUpperCase()===v});
       if(g)gsShowResult(g);
       else{
@@ -784,7 +784,7 @@ function gsLookup(){
       }
     },
     function(data){
-      document.getElementById('gs-btn-text').textContent='Find My Table';
+      document.getElementById('gs-btn-text').textContent='Check in';
       /* already checked in — still show table */
       var g=guests.find(function(x){return (x.facode||'').toUpperCase()===v});
       if(g)gsShowResult(g);
@@ -794,7 +794,7 @@ function gsLookup(){
       }
     },
     function(){
-      document.getElementById('gs-btn-text').textContent='Find My Table';
+      document.getElementById('gs-btn-text').textContent='Check in';
       resEl.className='gs-result';
       errEl.textContent='FA code "'+v+'" was not found. Please check your code or see event staff.';
       errEl.className='gs-err show';
