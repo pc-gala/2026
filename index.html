@@ -298,6 +298,8 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 <canvas id="confetti-canvas"></canvas>
 <div class="toast" id="toast"></div>
 <div id="print-area" style="display:none"></div>
+<div id="loading-bar" style="display:none;position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light),var(--gold));background-size:200%;animation:shimmer 1s infinite;z-index:99999"></div>
+<style>@keyframes shimmer{0%{background-position:200%}100%{background-position:-200%}}</style>
 
 <!-- WINNER OVERLAY -->
 <div class="winner-overlay" id="winner-overlay">
@@ -318,7 +320,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
   <div class="gs-card">
     <div class="gs-card-title">Enter your FA code to find your seat</div>
     <input class="gs-input" type="text" id="gs-name" placeholder="e.g. FA001" autocomplete="off" style="text-transform:uppercase;letter-spacing:.12em" onkeydown="if(event.key==='Enter')gsLookup()"/>
-    <button class="gs-btn" onclick="gsLookup()">Find My Table</button>
+    <button class="gs-btn" onclick="gsLookup()"><span id="gs-btn-text">Find My Table</span></button>
     <div class="gs-err" id="gs-err"></div>
     <div class="gs-result" id="gs-result">
       <div class="divider"><span>✦</span></div>
@@ -588,10 +590,9 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
   </div>
   <div class="card">
     <div class="card-title">Data Management</div>
-    <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px;font-style:italic">Load 200-pax demo data (20 tables, 200 guests with FA codes) or clear all data.</p>
+    <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px;font-style:italic">Data loads live from Google Sheets. Admin view auto-refreshes every 30 seconds.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-gold" onclick="loadDemo()">Load Demo Data (200 pax)</button>
-      <button class="btn btn-danger" onclick="resetAll()">Clear All Data</button>
+      <button class="btn btn-gold" onclick="fetchGuests(function(){renderGuests('');renderRecent();renderTMap();showToast('Refreshed!')})">Refresh Now</button>
     </div>
   </div>
 </div>
@@ -600,13 +601,98 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 </div><!-- #page-admin -->
 
 <script>
-var guests=[],tables=[],draws=[],scanIdx=0,drawPending=null,drawTimer=null,openTbl=null,faOpenTbl=null;
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbyMRYjr1GgU6OkJZGpK7APoCMKrwAwVT7MQIXwG65pTsS7ysHsaMW4LjlkQX15f2VGz/exec';
+var guests=[],tables=[],draws=[],drawPending=null,drawTimer=null,openTbl=null,faOpenTbl=null;
 var audioCtx=null;
 
-var NAMES=['Ahmad Fadzillah','Nurul Ain Rashid','Tan Beng Huat','Siti Hajar Malik','Lee Chong Wai','Rajesh Kumar','Farah Zulaikha','Wong Siew Ling','Mohd Haikal Aziz','Priya Nair','Zulkifli Hamdan','Chong Mei Fong','Amirul Hafiz','Nur Liyana Aziz','David Lim Kah Seng','Kavitha Subramaniam','Hafizuddin Rosli','Jessica Tan Hui Min','Muhammad Asyraf','Rosli bin Ismail','Lim Wei Kiat','Noor Fazilah Hassan','Balakrishnan Nair','Yap Chee Hong','Fatimah Zahra','Mohamad Faris','Lai Siew Mun','Suresh Pillai','Azlina Ahmad','Kenneth Ong','Nadia Azri','Ho Seng Guan','Tharmalingam R','Norliza Mohd','Chan Wai Kit','Rozita Ibrahim','Vinod Menon','Ng Swee Lin','Hafizah Noh','Lau Chin Hock','Sharifah Nabila','Brandon Lee','Amelia Ng','Hazwani Rosli','Patrick Tan','Nadhirah Asyraf','Derek Choo','Suraya Zainal','Ling Siew Chin','Rashdan Mohd'];
-var COS=['Phillip Capital SG','Phillip Securities','Phillip CFD','Phillip Futures','Phillip Wealth','Phillip Asset Mgmt','Phillip Nova','Phillip OCBC Sec','POEMS Direct','Phillip Exchange'];
-var DESIGS=['Senior Financial Consultant','Financial Advisor','Agency Director','Unit Manager','Senior Unit Manager','Branch Manager','Senior Agency Manager','Regional Director','Associate Director','Wealth Planner'];
-var CATS=['MDRT Member','MDRT Member','MDRT Member','Court of the Table','Court of the Table','Top of the Table','VIP Guest'];
+/* ── BUILD TABLES from guest data ── */
+function buildTables(list){
+  var tmap={};
+  list.forEach(function(g){
+    var key='T'+g.tableNum;
+    if(!tmap[key])tmap[key]={id:key,num:g.tableNum,name:g.tableName,capacity:10};
+  });
+  tables=Object.values(tmap).sort(function(a,b){return a.num-b.num});
+}
+
+/* ── JSONP helper (bypasses CORS) ── */
+function jsonp(url, callback) {
+  var cbName = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+  window[cbName] = function(data) {
+    delete window[cbName];
+    document.getElementById(cbName) && document.getElementById(cbName).remove();
+    callback(null, data);
+  };
+  var script = document.createElement('script');
+  script.id = cbName;
+  script.src = url + '&callback=' + cbName;
+  script.onerror = function() {
+    delete window[cbName];
+    script.remove();
+    callback(new Error('Load failed'));
+  };
+  document.head.appendChild(script);
+}
+
+/* ── FETCH GUESTS FROM GOOGLE SHEET ── */
+function fetchGuests(callback) {
+  showLoading(true);
+  jsonp(SCRIPT_URL + '?action=getGuests', function(err, data) {
+    showLoading(false);
+    if (err || !data || !data.guests) {
+      showToast('Cannot connect. Check internet connection.');
+      console.error(err);
+      return;
+    }
+    guests = data.guests.map(function(g, i) {
+      return {
+        id:        'G' + String(i + 1).padStart(3, '0'),
+        name:      g.name,
+        co:        g.co || '',
+        desig:     g.desig || '',
+        facode:    g.facode,
+        cat:       g.cat,
+        tableId:   'T' + g.tableNum,
+        tableNum:  g.tableNum,
+        tableName: g.tableName,
+        ci:        g.ci,
+        ciTime:    g.ciTime || '',
+        walkin:    false
+      };
+    });
+    buildTables(guests);
+    upMetrics(); upFaMetrics();
+    popTblSel(); popWiTbl(); renderTblList();
+    if (callback) callback();
+  });
+}
+
+/* ── CHECK IN via Google Sheet ── */
+function checkInByFA(facode, onSuccess, onAlready, onNotFound) {
+  showLoading(true);
+  jsonp(SCRIPT_URL + '?action=checkin&facode=' + encodeURIComponent(facode), function(err, data) {
+    showLoading(false);
+    if (err) { showToast('Check-in failed. Try again.'); return; }
+    if (data.status === 'ok') {
+      var g = guests.find(function(x) {
+        return (x.facode || '').toUpperCase() === facode.toUpperCase();
+      });
+      if (g) { g.ci = true; g.ciTime = data.ciTime; }
+      upMetrics(); upFaMetrics(); renderRecent();
+      if (onSuccess) onSuccess(data);
+    } else if (data.status === 'already') {
+      if (onAlready) onAlready(data);
+    } else {
+      if (onNotFound) onNotFound();
+    }
+  });
+}
+
+/* ── LOADING INDICATOR ── */
+function showLoading(show) {
+  var el = document.getElementById('loading-bar');
+  if (el) el.style.display = show ? 'block' : 'none';
+}
 
 /* ── ROUTER ── */
 function route(){
@@ -639,11 +725,12 @@ function showTab(id,el){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
   document.getElementById('tab-sec-'+id).classList.add('active');
   el.classList.add('active');
-  if(id==='tables')renderTMap();
-  if(id==='guests')renderGuests('');
+  if(id==='tables'){renderTMap()}
+  if(id==='guests'){renderGuests(document.getElementById('gsearch')?document.getElementById('gsearch').value:'')}
   if(id==='walkin'){popWiTbl();renderWiLog()}
   if(id==='admin'){popTblSel();renderTblList()}
   if(id==='share'){setTimeout(renderShareQRs,80)}
+  if(id==='lucky'){/* pool already set */}
 }
 
 /* ── METRICS ── */
@@ -679,14 +766,56 @@ function faCatBadge(cat){
 function gsLookup(){
   var v=document.getElementById('gs-name').value.trim().toUpperCase();
   if(!v)return;
-  var g=guests.find(function(x){return (x.facode||'').toUpperCase()===v});
-  if(!g){
-    document.getElementById('gs-result').className='gs-result';
-    document.getElementById('gs-err').textContent='FA code "'+v+'" was not found. Please check your code or see event staff.';
-    document.getElementById('gs-err').className='gs-err show';return;
-  }
-  document.getElementById('gs-err').className='gs-err';
-  gsShowResult(g);
+  var errEl=document.getElementById('gs-err');
+  var resEl=document.getElementById('gs-result');
+  errEl.className='gs-err';
+  resEl.className='gs-result';
+  document.getElementById('gs-btn-text').textContent='Searching...';
+  checkInByFA(v,
+    function(data){
+      document.getElementById('gs-btn-text').textContent='Find My Table';
+      var g=guests.find(function(x){return (x.facode||'').toUpperCase()===v});
+      if(g)gsShowResult(g);
+      else{
+        /* build from sheet response directly */
+        var fake={id:'',name:data.name,facode:v,cat:data.cat||'',
+          tableId:'T'+data.tableNum,tableNum:data.tableNum,tableName:data.tableName,ci:true,ciTime:data.ciTime};
+        gsShowResultRaw(fake);
+      }
+    },
+    function(data){
+      document.getElementById('gs-btn-text').textContent='Find My Table';
+      /* already checked in — still show table */
+      var g=guests.find(function(x){return (x.facode||'').toUpperCase()===v});
+      if(g)gsShowResult(g);
+      else{
+        var fake={name:data.name,facode:v,cat:'',tableNum:data.tableNum,tableName:data.tableName,ci:true,ciTime:data.ciTime};
+        gsShowResultRaw(fake);
+      }
+    },
+    function(){
+      document.getElementById('gs-btn-text').textContent='Find My Table';
+      resEl.className='gs-result';
+      errEl.textContent='FA code "'+v+'" was not found. Please check your code or see event staff.';
+      errEl.className='gs-err show';
+    }
+  );
+}
+function gsShowResultRaw(g){
+  document.getElementById('gs-tbl-num').textContent=g.tableNum||'—';
+  document.getElementById('gs-tbl-name').textContent=g.tableName||'Not assigned';
+  document.getElementById('gs-tbl-cat').textContent=g.cat||'';
+  var seated=guests.filter(function(x){return x.tableNum==g.tableNum});
+  var seats='';
+  seated.forEach(function(s){
+    var isYou=(s.facode||'').toUpperCase()===(g.facode||'').toUpperCase();
+    seats+='<div class="gs-seat-row">'
+      +'<div style="flex:1;'+(isYou?'font-weight:bold;color:var(--gold-dark)':'')+'">'+(isYou?'★ ':'')+s.name+'</div>'
+      +(isYou?'<span style="font-size:10px;color:var(--gold);letter-spacing:.06em">YOU</span>':'')
+      +'</div>';
+  });
+  document.getElementById('gs-seats').innerHTML=seats||'<div style="color:var(--ink-light);font-size:12px">No seat info.</div>';
+  document.getElementById('gs-result').className='gs-result show';
 }
 function gsShowResult(g){
   var tbl=tables.find(function(t){return t.id===g.tableId});
@@ -809,6 +938,7 @@ function renderShareQRs(){
 function manualCI(){
   var v=document.getElementById('man-in').value.trim();if(!v)return;
   var q=v.toLowerCase();
+  /* find guest by name, id or facode */
   var g=guests.find(function(g){
     return g.name.toLowerCase().includes(q)
       ||g.id.toLowerCase()===q
@@ -816,16 +946,30 @@ function manualCI(){
   });
   var rb=document.getElementById('res-box');
   if(!g){rb.className='res err';document.getElementById('res-name').textContent='Guest not found';document.getElementById('res-info').textContent='"'+v+'" is not on the guest list';document.getElementById('res-tbl').style.display='none';return}
+  /* use FA code to check in via sheet */
   document.getElementById('man-in').value='';
-  if(g.ci){rb.className='res err';document.getElementById('res-name').textContent=g.name;document.getElementById('res-info').textContent='Already checked in at '+g.ciTime;document.getElementById('res-tbl').style.display='none';return}
-  g.ci=true;g.ciTime=new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'});
-  upMetrics();upFaMetrics();renderRecent();
-  var tbl=tables.find(function(t){return t.id===g.tableId});
-  rb.className='res ok';
-  document.getElementById('res-name').textContent='✓  '+g.name;
-  document.getElementById('res-info').textContent=(g.desig?g.desig+' · ':'')+( g.co||'')+(g.cat?' · '+g.cat:'');
-  if(tbl){document.getElementById('res-tbl').style.display='inline-block';document.getElementById('res-tbl').textContent=tbl.name+' · Table '+tbl.num}
-  else document.getElementById('res-tbl').style.display='none';
+  checkInByFA(g.facode,
+    function(data){
+      rb.className='res ok';
+      document.getElementById('res-name').textContent='✓  '+data.name;
+      document.getElementById('res-info').textContent=(g.desig?g.desig+' · ':'')+( g.co||'')+(g.cat?' · '+g.cat:'');
+      document.getElementById('res-tbl').style.display='inline-block';
+      document.getElementById('res-tbl').textContent=data.tableName+' · Table '+data.tableNum;
+      renderGuests(document.querySelector('.sbar')?document.querySelector('.sbar').value:'');
+    },
+    function(data){
+      rb.className='res err';
+      document.getElementById('res-name').textContent=data.name;
+      document.getElementById('res-info').textContent='Already checked in at '+data.ciTime;
+      document.getElementById('res-tbl').style.display='none';
+    },
+    function(){
+      rb.className='res err';
+      document.getElementById('res-name').textContent='Not found in database';
+      document.getElementById('res-info').textContent='Please check FA code';
+      document.getElementById('res-tbl').style.display='none';
+    }
+  );
 }
 function renderRecent(){
   var el=document.getElementById('recent');
@@ -1102,28 +1246,10 @@ function renderTblList(){
     return '<div style="border:1px solid var(--beige-mid);border-radius:3px;padding:4px 10px;font-size:11px"><strong>'+t.name+'</strong> <span style="color:var(--ink-light)">'+cnt+'/'+t.capacity+'</span></div>';
   }).join('')+'</div>';
 }
-function loadDemo(silent){
-  tables=[];guests=[];
-  var tnames=['Prestige Circle','Heritage Table','Legacy Table','Excellence Table','Pinnacle Table','Distinction Table','Eminence Table','Laureate Table','Sovereign Table','Meridian Table','Zenith Table','Apex Table','Vanguard Table','Luminary Table','Grandeur Table','Opulence Table','Nobility Table','Eloquence Table','Reverence Table','Rising Stars'];
-  for(var i=0;i<20;i++)tables.push({id:'T'+(i+1),num:i+1,name:tnames[i],capacity:10});
-  for(var j=0;j<200;j++){
-    var ni=j%NAMES.length,ci2=j%COS.length,di=j%DESIGS.length,cati=Math.floor(Math.random()*CATS.length);
-    var tbl2=tables[Math.floor(j/10)];
-    var suffix=Math.floor(j/NAMES.length)>0?' '+(Math.floor(j/NAMES.length)+1):'';
-    var facode='FA'+String(j+1).padStart(3,'0');
-    guests.push({id:'G'+String(j+1).padStart(3,'0'),name:NAMES[ni]+suffix,co:COS[ci2],desig:DESIGS[di],facode:facode,cat:CATS[cati],tableId:tbl2.id,ci:false,ciTime:null,walkin:false});
-  }
-  upMetrics();upFaMetrics();
-  if(!silent){popTblSel();popWiTbl();renderTblList();renderGuests('');showToast('Loaded 200 guests with FA codes across 20 tables!')}
-}
+function loadDemo(){showToast('Data is loaded live from Google Sheets.');}
 function resetAll(){
-  if(!confirm('Clear all guests, tables, and draw history?'))return;
-  guests=[];tables=[];draws=[];
-  upMetrics();upFaMetrics();popTblSel();popWiTbl();renderTblList();renderDrawHist();
-  document.getElementById('gtbody').innerHTML='';
-  document.getElementById('recent').textContent='No check-ins yet.';
-  document.getElementById('res-box').className='res';
-  showToast('All data cleared');
+  if(!confirm('Refresh data from Google Sheets?'))return;
+  fetchGuests(function(){renderGuests('');renderRecent();renderTMap();showToast('Data refreshed from Google Sheets!');});
 }
 function exportCSV(){
   var rows=[['ID','Name','FA Code','Company','Designation','Category','Table','Status','Check-in Time','Walk-in']];
@@ -1138,7 +1264,27 @@ function dlCSV(rows,fname){
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=fname;a.click();
 }
 
-upMetrics();renderDrawHist();loadDemo(true);route();
+/* ══ AUTO-REFRESH for admin (every 30 seconds) ══ */
+function startAutoRefresh(){
+  setInterval(function(){
+    var h=window.location.hash;
+    if(h==='#admin'||h===''){
+      fetchGuests(function(){
+        renderGuests(document.querySelector('.sbar')?document.querySelector('.sbar').value:'');
+        renderRecent();
+        renderTMap();
+      });
+    }
+  },30000);
+}
+
+/* ══ STARTUP ══ */
+upMetrics();renderDrawHist();route();
+fetchGuests(function(){
+  renderGuests('');
+  renderRecent();
+});
+startAutoRefresh();
 </script>
 </body>
 </html>
