@@ -523,42 +523,87 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 
 <!-- LUCKY DRAW TAB -->
 <div class="sec" id="tab-sec-lucky">
-  <div class="lucky-stage">
-    <span class="orn">✦ ✦ ✦</span>
-    <div class="draw-label">Lucky Draw</div>
-    <div class="draw-name" id="draw-name">—</div>
-    <div class="draw-desig" id="draw-desig"></div>
-    <div class="draw-co" id="draw-co"></div>
-  </div>
-  <div class="card" style="text-align:center">
-    <div style="margin-bottom:1rem">
-      <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-right:.5rem">Pool:</label>
-      <select id="draw-pool" style="font-size:12px;padding:5px 8px">
-        <option value="all">All checked-in guests</option>
-        <option value="custom">Custom import list</option>
-        <option value="mdrt">MDRT Members only</option>
-        <option value="cot">Court of the Table</option>
-        <option value="tot">Top of the Table</option>
-        <option value="notdrawn">Exclude already drawn</option>
-      </select>
+
+  <!-- MODE TOGGLE -->
+  <div class="card" style="text-align:center;padding:.8rem 1.25rem">
+    <div style="display:inline-flex;border:1px solid var(--beige-mid);border-radius:8px;overflow:hidden">
+      <button id="mode-roll-btn" onclick="setDrawMode('roll')" style="padding:8px 20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--gold);color:#fff;font-family:'Segoe UI',Arial,sans-serif;letter-spacing:.04em">✦ Name Roll</button>
+      <button id="mode-wheel-btn" onclick="setDrawMode('wheel')" style="padding:8px 20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--white);color:var(--ink-light);font-family:'Segoe UI',Arial,sans-serif;letter-spacing:.04em">🎡 Spin Wheel</button>
     </div>
-    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-      <button class="btn btn-gold" onclick="startDraw()" id="draw-btn" style="padding:10px 28px;font-size:14px;letter-spacing:.08em">✦ Draw Winner</button>
-      <button class="btn" onclick="confirmDraw()" id="confirm-btn" style="display:none">Confirm &amp; Announce</button>
-      <button class="btn" onclick="cancelDraw()" id="cancel-btn" style="display:none">Re-draw</button>
+  </div>
+
+  <!-- NAME ROLL MODE -->
+  <div id="mode-roll">
+    <div class="lucky-stage">
+      <span class="orn">✦ ✦ ✦</span>
+      <div class="draw-label">Lucky Draw</div>
+      <div class="draw-name" id="draw-name">—</div>
+      <div class="draw-desig" id="draw-desig"></div>
+      <div class="draw-co" id="draw-co"></div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="margin-bottom:1rem">
+        <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-right:.5rem">Pool:</label>
+        <select id="draw-pool" style="font-size:12px;padding:5px 8px" onchange="syncPool()">
+          <option value="all">All checked-in guests</option>
+          <option value="custom">Custom import list</option>
+          <option value="mdrt">MDRT Members only</option>
+          <option value="cot">Court of the Table</option>
+          <option value="tot">Top of the Table</option>
+          <option value="notdrawn">Exclude already drawn</option>
+        </select>
+      </div>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="startDraw()" id="draw-btn" style="padding:10px 28px;font-size:14px;letter-spacing:.08em">✦ Draw Winner</button>
+        <button class="btn" onclick="confirmDraw()" id="confirm-btn" style="display:none">Confirm &amp; Announce</button>
+        <button class="btn" onclick="cancelDraw()" id="cancel-btn" style="display:none">Re-draw</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPIN WHEEL MODE -->
+  <div id="mode-wheel" style="display:none">
+    <div class="card" style="text-align:center;padding:1rem">
+      <div style="margin-bottom:.8rem;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase">Pool:</label>
+        <select id="wheel-pool" style="font-size:12px;padding:5px 8px" onchange="syncPool()">
+          <option value="all">All checked-in guests</option>
+          <option value="custom">Custom import list</option>
+          <option value="mdrt">MDRT Members only</option>
+          <option value="cot">Court of the Table</option>
+          <option value="tot">Top of the Table</option>
+          <option value="notdrawn">Exclude already drawn</option>
+        </select>
+        <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">Refresh Wheel</button>
+      </div>
+      <!-- WHEEL CONTAINER -->
+      <div style="position:relative;display:inline-block;margin:0 auto">
+        <!-- pointer -->
+        <div style="position:absolute;top:50%;right:-18px;transform:translateY(-50%);z-index:10;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">▶</div>
+        <canvas id="wheel-canvas" width="420" height="420" style="max-width:100%;border-radius:50%;box-shadow:0 8px 40px rgba(0,0,0,.35);cursor:pointer" onclick="spinWheel()"></canvas>
+        <!-- centre hub -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:54px;height:54px;background:var(--gold);border-radius:50%;border:4px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5" onclick="spinWheel()">
+          <span style="color:#fff;font-size:18px;font-weight:700">✦</span>
+        </div>
+      </div>
+      <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="spinWheel()" id="wheel-spin-btn" style="padding:10px 28px;font-size:14px;letter-spacing:.08em">🎡 Spin!</button>
+        <button class="btn" onclick="confirmWheelDraw()" id="wheel-confirm-btn" style="display:none">Confirm &amp; Announce</button>
+        <button class="btn" onclick="spinWheel()" id="wheel-redraw-btn" style="display:none">Spin Again</button>
+      </div>
+      <div id="wheel-result" style="margin-top:.8rem;font-size:15px;font-weight:600;color:var(--gold);min-height:24px;letter-spacing:.03em"></div>
+      <div id="wheel-count" style="font-size:11px;color:var(--ink-light);margin-top:4px"></div>
     </div>
   </div>
 
   <!-- IMPORT CUSTOM DRAW LIST -->
   <div class="card">
     <div class="card-title">Import Custom Draw List
-      <span style="font-size:11px;color:var(--ink-light);font-weight:normal">Upload your own name list for lucky draw</span>
+      <span style="font-size:11px;color:var(--ink-light);font-weight:normal">Upload your own name list</span>
     </div>
     <div style="background:var(--ivory);border:1px solid var(--beige-mid);border-radius:8px;padding:1rem;margin-bottom:.8rem">
       <p style="font-size:12px;color:var(--ink-light);margin-bottom:.8rem;line-height:1.6">
-        Upload a <strong>CSV or Excel (.xlsx)</strong> file with your draw participants.<br/>
-        Your file must have a header row. Required column: <strong>Name</strong><br/>
-        Optional columns: <strong>Designation</strong>, <strong>Company</strong>, <strong>Category</strong>
+        Upload a <strong>CSV</strong> file or paste names below. Required column: <strong>Name</strong>
       </p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:.8rem">
         <label style="font-size:11px;color:var(--ink-light);letter-spacing:.06em;text-transform:uppercase">Separator:</label>
@@ -570,14 +615,12 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
       </div>
       <div style="border:1.5px dashed var(--beige-dark);border-radius:6px;padding:1.2rem;text-align:center;cursor:pointer;margin-bottom:.8rem" onclick="document.getElementById('draw-file-input').click()">
         <div style="font-size:24px;margin-bottom:6px">📂</div>
-        <div style="font-size:13px;color:var(--ink-mid);font-weight:600">Click to upload CSV or Excel file</div>
+        <div style="font-size:13px;color:var(--ink-mid);font-weight:600">Click to upload CSV file</div>
         <div style="font-size:11px;color:var(--ink-light);margin-top:3px">or drag and drop here</div>
-        <input type="file" id="draw-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleDrawFileUpload(this)"/>
+        <input type="file" id="draw-file-input" accept=".csv,.txt" style="display:none" onchange="handleDrawFileUpload(this)"/>
       </div>
-      <div style="text-align:center;margin-bottom:.5rem">
-        <span style="font-size:11px;color:var(--ink-light)">— or paste names directly —</span>
-      </div>
-      <textarea id="draw-paste-area" placeholder="Paste names here, one per line:&#10;Ahmad Fadzillah&#10;Nurul Ain Rashid&#10;Tan Beng Huat" style="width:100%;height:100px;padding:8px 10px;border:1px solid var(--beige-mid);border-radius:6px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;resize:vertical;background:var(--white);color:var(--ink)"></textarea>
+      <div style="text-align:center;margin-bottom:.5rem"><span style="font-size:11px;color:var(--ink-light)">— or paste names directly —</span></div>
+      <textarea id="draw-paste-area" placeholder="Paste names here, one per line:&#10;Ahmad Fadzillah&#10;Nurul Ain Rashid&#10;Tan Beng Huat" style="width:100%;height:90px;padding:8px 10px;border:1px solid var(--beige-mid);border-radius:6px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;resize:vertical;background:var(--white);color:var(--ink)"></textarea>
       <div style="display:flex;gap:8px;margin-top:.8rem;flex-wrap:wrap">
         <button class="btn btn-gold" onclick="importDrawList()" style="flex:1">Import List</button>
         <button class="btn btn-danger" onclick="clearCustomPool()" style="flex:none">Clear List</button>
@@ -762,7 +805,7 @@ function showTab(id,el){
   if(id==='walkin'){popWiTbl();renderWiLog()}
   if(id==='admin'){popTblSel();renderTblList()}
   if(id==='share'){setTimeout(renderShareQRs,80)}
-  if(id==='lucky'){/* pool already set */}
+  if(id==='lucky'){setTimeout(function(){if(currentDrawMode==='wheel')buildWheel()},100)}
 }
 
 /* ── METRICS ── */
@@ -1064,8 +1107,198 @@ function showTDtl(tid){
   det.classList.add('open');
 }
 
-/* ══ LUCKY DRAW with SOUND & CONFETTI ══ */
-var customDrawPool=[];
+/* ══ DRAW MODE TOGGLE ══ */
+var currentDrawMode='roll';
+var wheelSpinning=false;
+var wheelAngle=0;
+var wheelWinner=null;
+var wheelSegments=[];
+
+var WHEEL_COLORS=[
+  '#B8860B','#1a3a6b','#C8960C','#2a4a8b','#D4A017','#163060',
+  '#9a7200','#0d2550','#E8C040','#3a5a9b','#8B6508','#1e3870'
+];
+
+function setDrawMode(mode){
+  currentDrawMode=mode;
+  document.getElementById('mode-roll').style.display=mode==='roll'?'block':'none';
+  document.getElementById('mode-wheel').style.display=mode==='wheel'?'block':'none';
+  document.getElementById('mode-roll-btn').style.background=mode==='roll'?'var(--gold)':'var(--white)';
+  document.getElementById('mode-roll-btn').style.color=mode==='roll'?'#fff':'var(--ink-light)';
+  document.getElementById('mode-wheel-btn').style.background=mode==='wheel'?'var(--gold)':'var(--white)';
+  document.getElementById('mode-wheel-btn').style.color=mode==='wheel'?'#fff':'var(--ink-light)';
+  if(mode==='wheel')buildWheel();
+}
+
+function syncPool(){
+  var rp=document.getElementById('draw-pool');
+  var wp=document.getElementById('wheel-pool');
+  if(rp&&wp){
+    if(document.activeElement===rp)wp.value=rp.value;
+    else rp.value=wp.value;
+  }
+  if(currentDrawMode==='wheel')buildWheel();
+}
+
+/* ── BUILD WHEEL ── */
+function buildWheel(){
+  var pool=getWheelPool();
+  var canvas=document.getElementById('wheel-canvas');
+  if(!canvas)return;
+  var wc=document.getElementById('wheel-count');
+  if(wc)wc.textContent=pool.length+' participants in pool';
+  if(!pool.length){
+    drawEmptyWheel(canvas);
+    document.getElementById('wheel-result').textContent='No guests in pool. Check in guests first.';
+    return;
+  }
+  document.getElementById('wheel-result').textContent='';
+  document.getElementById('wheel-spin-btn').style.display='';
+  document.getElementById('wheel-confirm-btn').style.display='none';
+  document.getElementById('wheel-redraw-btn').style.display='none';
+  /* limit segments to 30 for readability — random sample if more */
+  wheelSegments=pool.length>30?shuffleArr(pool.slice()).slice(0,30):pool.slice();
+  drawWheel(canvas,wheelAngle);
+}
+
+function getWheelPool(){
+  var sel=document.getElementById('wheel-pool');
+  var pool=sel?sel.value:'all';
+  if(pool==='custom'){
+    var drawn=new Set(draws.map(function(d){return d.name}));
+    return (customDrawPool.length?customDrawPool:guests.filter(function(g){return g.ci})).filter(function(p){return !drawn.has(p.name)});
+  }
+  var base=guests.filter(function(g){return g.ci});
+  if(pool==='mdrt')base=base.filter(function(g){return g.cat==='MDRT Member'});
+  else if(pool==='cot')base=base.filter(function(g){return g.cat==='Court of the Table'});
+  else if(pool==='tot')base=base.filter(function(g){return g.cat==='Top of the Table'});
+  else if(pool==='notdrawn'){var drawn2=new Set(draws.map(function(d){return d.id}));base=base.filter(function(g){return !drawn2.has(g.id)})}
+  return base;
+}
+
+function shuffleArr(arr){
+  for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t}
+  return arr;
+}
+
+function drawEmptyWheel(canvas){
+  var ctx=canvas.getContext('2d');
+  var cx=canvas.width/2,cy=canvas.height/2,r=cx-10;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='#2C2416';ctx.fill();
+  ctx.strokeStyle='#B8860B';ctx.lineWidth=4;ctx.stroke();
+  ctx.fillStyle='#B8860B';ctx.font='bold 18px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('No guests in pool',cx,cy);
+}
+
+function drawWheel(canvas,angle){
+  var ctx=canvas.getContext('2d');
+  var n=wheelSegments.length;
+  if(!n){drawEmptyWheel(canvas);return}
+  var cx=canvas.width/2,cy=canvas.height/2,r=cx-6;
+  var arc=2*Math.PI/n;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  /* outer ring */
+  ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);
+  ctx.fillStyle='#B8860B';ctx.fill();
+  for(var i=0;i<n;i++){
+    var start=angle+i*arc;var end=start+arc;
+    /* segment */
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);ctx.closePath();
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1.5;ctx.stroke();
+    /* text */
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
+    var name=wheelSegments[i].name||'';
+    var maxLen=n>15?10:14;
+    if(name.length>maxLen)name=name.substring(0,maxLen-1)+'…';
+    var fontSize=n>20?10:n>12?12:14;
+    ctx.font='bold '+fontSize+'px Segoe UI,Arial,sans-serif';
+    ctx.fillStyle='#fff';ctx.textAlign='right';
+    ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=3;
+    ctx.fillText(name,r-10,fontSize/3);
+    ctx.restore();
+  }
+  /* inner shadow circle */
+  ctx.beginPath();ctx.arc(cx,cy,30,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fill();
+}
+
+/* ── SPIN WHEEL ── */
+function spinWheel(){
+  if(wheelSpinning)return;
+  var pool=getWheelPool();
+  if(!pool.length){showToast('No guests in pool!');return}
+  buildWheel();
+  var canvas=document.getElementById('wheel-canvas');
+  var n=wheelSegments.length;
+  /* pick random winner index */
+  var winnerIdx=Math.floor(Math.random()*n);
+  var arc=2*Math.PI/n;
+  /* calculate target angle so winner lands at pointer (right = 0°) */
+  var extra=Math.PI*2*(5+Math.random()*3); /* 5-8 full spins */
+  var targetAngle=extra-(winnerIdx*arc+arc/2-Math.PI/2*0);
+  /* The pointer is at right (angle=0), we want winnerIdx segment centred at angle 0 (right) */
+  /* So target = -(winnerIdx * arc + arc/2) + random full spins */
+  var spinTo=wheelAngle+extra+((Math.PI*2-(wheelAngle%( Math.PI*2))))+( Math.PI*1.5-(winnerIdx*arc+arc/2));
+  var duration=5000+Math.random()*2000;
+  var start=null;
+  var startAngle=wheelAngle;
+  wheelSpinning=true;
+  document.getElementById('wheel-spin-btn').style.display='none';
+  document.getElementById('wheel-confirm-btn').style.display='none';
+  document.getElementById('wheel-redraw-btn').style.display='none';
+  document.getElementById('wheel-result').textContent='Spinning…';
+  playDrumRoll();
+  function easeOut(t){return 1-Math.pow(1-t,4)}
+  function animate(ts){
+    if(!start)start=ts;
+    var elapsed=ts-start;
+    var progress=Math.min(elapsed/duration,1);
+    var eased=easeOut(progress);
+    wheelAngle=startAngle+(spinTo-startAngle)*eased;
+    drawWheel(canvas,wheelAngle);
+    if(progress<1){requestAnimationFrame(animate)}
+    else{
+      wheelAngle=spinTo;
+      wheelSpinning=false;
+      /* find actual winner by checking which segment is at pointer */
+      var norm=((wheelAngle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+      var pointerAngle=(Math.PI*2-norm+Math.PI*2)%(Math.PI*2);
+      var idx=Math.floor(pointerAngle/arc)%n;
+      wheelWinner=wheelSegments[idx];
+      document.getElementById('wheel-result').textContent='🎉 '+wheelWinner.name+'!';
+      document.getElementById('wheel-result').style.color='var(--gold)';
+      document.getElementById('wheel-confirm-btn').style.display='';
+      document.getElementById('wheel-redraw-btn').style.display='';
+      /* mini fanfare */
+      playFanfare();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function confirmWheelDraw(){
+  if(!wheelWinner)return;
+  var w=wheelWinner;
+  draws.push({id:w.id||'',name:w.name,co:w.co||'',desig:w.desig||'',cat:w.cat||'',facode:w.facode||'',time:new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}),round:draws.length+1});
+  upMetrics();renderDrawHist();updatePoolStatus();
+  document.getElementById('wo-name').textContent=w.name;
+  document.getElementById('wo-desig').textContent=w.desig||'';
+  document.getElementById('wo-co').textContent=w.co||'';
+  document.getElementById('winner-overlay').classList.add('show');
+  playFanfare();setTimeout(launchConfetti,200);
+  wheelWinner=null;
+  document.getElementById('wheel-confirm-btn').style.display='none';
+  document.getElementById('wheel-redraw-btn').style.display='none';
+  document.getElementById('wheel-spin-btn').style.display='';
+  document.getElementById('wheel-result').textContent='';
+  setTimeout(buildWheel,600);
+}
+
+
 
 /* ══ LUCKY DRAW CUSTOM POOL IMPORT ══ */
 function handleDrawFileUpload(input){
