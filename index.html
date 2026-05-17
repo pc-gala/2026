@@ -290,6 +290,24 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 @media(max-width:580px){
   .metrics{grid-template-columns:repeat(3,1fr)}.ag{grid-template-columns:1fr}
   .tab{font-size:10px;padding:7px 2px}.qr-grid{grid-template-columns:repeat(2,1fr)}
+  /* Mobile background fix — position top so Art Deco title shows */
+  #page-guest{
+    background-position:center top !important;
+    background-size:cover !important;
+    justify-content:flex-start !important;
+    padding-top:42vw !important;
+  }
+  #page-fa{
+    background-position:center top !important;
+    background-size:cover !important;
+  }
+  .gs-card{
+    max-width:92vw !important;
+    padding:1.4rem 1.2rem !important;
+  }
+  .gs-card-title{font-size:13px}
+  .gs-input{font-size:16px !important}
+  .gs-btn{font-size:14px !important}
 }
 .sbar{width:100%;padding:7px 10px;border:1px solid var(--beige-mid);border-radius:3px;font-size:13px;background:var(--white);color:var(--ink);margin-bottom:.8rem;font-family:'Georgia',serif}
 .sbar:focus{outline:none;border-color:var(--gold)}
@@ -524,76 +542,32 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 <!-- LUCKY DRAW TAB -->
 <div class="sec" id="tab-sec-lucky">
 
-  <!-- MODE TOGGLE -->
-  <div class="card" style="text-align:center;padding:.8rem 1.25rem">
-    <div style="display:inline-flex;border:1px solid var(--beige-mid);border-radius:8px;overflow:hidden">
-      <button id="mode-roll-btn" onclick="setDrawMode('roll')" style="padding:8px 20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--gold);color:#fff;font-family:'Segoe UI',Arial,sans-serif;letter-spacing:.04em">✦ Name Roll</button>
-      <button id="mode-wheel-btn" onclick="setDrawMode('wheel')" style="padding:8px 20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--white);color:var(--ink-light);font-family:'Segoe UI',Arial,sans-serif;letter-spacing:.04em">🎡 Spin Wheel</button>
+  <!-- SPIN WHEEL -->
+  <div class="card" style="text-align:center;padding:1rem">
+    <div style="margin-bottom:.8rem;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase">Pool:</label>
+      <select id="wheel-pool" style="font-size:12px;padding:5px 8px" onchange="buildWheel()">
+        <option value="all">All checked-in guests</option>
+        <option value="custom">Custom import list</option>
+        <option value="notdrawn">Exclude already drawn</option>
+      </select>
+      <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">↺ Refresh</button>
     </div>
-  </div>
-
-  <!-- NAME ROLL MODE -->
-  <div id="mode-roll">
-    <div class="lucky-stage">
-      <span class="orn">✦ ✦ ✦</span>
-      <div class="draw-label">Lucky Draw</div>
-      <div class="draw-name" id="draw-name">—</div>
-      <div class="draw-desig" id="draw-desig"></div>
-      <div class="draw-co" id="draw-co"></div>
-    </div>
-    <div class="card" style="text-align:center">
-      <div style="margin-bottom:1rem">
-        <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-right:.5rem">Pool:</label>
-        <select id="draw-pool" style="font-size:12px;padding:5px 8px" onchange="syncPool()">
-          <option value="all">All checked-in guests</option>
-          <option value="custom">Custom import list</option>
-          <option value="mdrt">MDRT Members only</option>
-          <option value="cot">Court of the Table</option>
-          <option value="tot">Top of the Table</option>
-          <option value="notdrawn">Exclude already drawn</option>
-        </select>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-gold" onclick="startDraw()" id="draw-btn" style="padding:10px 28px;font-size:14px;letter-spacing:.08em">✦ Draw Winner</button>
-        <button class="btn" onclick="confirmDraw()" id="confirm-btn" style="display:none">Confirm &amp; Announce</button>
-        <button class="btn" onclick="cancelDraw()" id="cancel-btn" style="display:none">Re-draw</button>
+    <!-- WHEEL CONTAINER -->
+    <div style="position:relative;display:inline-block;margin:0 auto">
+      <canvas id="wheel-canvas" width="460" height="460" style="max-width:min(460px,88vw);height:auto;border-radius:50%;box-shadow:0 8px 48px rgba(0,0,0,.45);cursor:pointer;display:block" onclick="spinWheel()"></canvas>
+      <!-- centre hub -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;background:linear-gradient(135deg,#D4A017,#8B6508);border-radius:50%;border:4px solid #fff;box-shadow:0 2px 14px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5" onclick="spinWheel()">
+        <span style="color:#fff;font-size:20px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)">✦</span>
       </div>
     </div>
-  </div>
-
-  <!-- SPIN WHEEL MODE -->
-  <div id="mode-wheel" style="display:none">
-    <div class="card" style="text-align:center;padding:1rem">
-      <div style="margin-bottom:.8rem;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap">
-        <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase">Pool:</label>
-        <select id="wheel-pool" style="font-size:12px;padding:5px 8px" onchange="syncPool()">
-          <option value="all">All checked-in guests</option>
-          <option value="custom">Custom import list</option>
-          <option value="mdrt">MDRT Members only</option>
-          <option value="cot">Court of the Table</option>
-          <option value="tot">Top of the Table</option>
-          <option value="notdrawn">Exclude already drawn</option>
-        </select>
-        <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">Refresh Wheel</button>
-      </div>
-      <!-- WHEEL CONTAINER -->
-      <div style="position:relative;display:inline-block;margin:0 auto">
-        <!-- pointer -->
-        <div style="position:absolute;top:50%;right:-18px;transform:translateY(-50%);z-index:10;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">▶</div>
-        <canvas id="wheel-canvas" width="420" height="420" style="max-width:100%;border-radius:50%;box-shadow:0 8px 40px rgba(0,0,0,.35);cursor:pointer" onclick="spinWheel()"></canvas>
-        <!-- centre hub -->
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:54px;height:54px;background:var(--gold);border-radius:50%;border:4px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5" onclick="spinWheel()">
-          <span style="color:#fff;font-size:18px;font-weight:700">✦</span>
-        </div>
-      </div>
-      <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-gold" onclick="spinWheel()" id="wheel-spin-btn" style="padding:10px 28px;font-size:14px;letter-spacing:.08em">🎡 Spin!</button>
-        <button class="btn" onclick="confirmWheelDraw()" id="wheel-confirm-btn" style="display:none">Confirm &amp; Announce</button>
-        <button class="btn" onclick="spinWheel()" id="wheel-redraw-btn" style="display:none">Spin Again</button>
-      </div>
-      <div id="wheel-result" style="margin-top:.8rem;font-size:15px;font-weight:600;color:var(--gold);min-height:24px;letter-spacing:.03em"></div>
-      <div id="wheel-count" style="font-size:11px;color:var(--ink-light);margin-top:4px"></div>
+    <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="spinWheel()" id="wheel-spin-btn" style="padding:10px 32px;font-size:15px;letter-spacing:.08em">🎡 Spin!</button>
+      <button class="btn btn-gold" onclick="confirmWheelDraw()" id="wheel-confirm-btn" style="display:none;background:#27500A;border-color:#27500A">✓ Confirm Winner</button>
+      <button class="btn" onclick="spinWheel()" id="wheel-redraw-btn" style="display:none">↺ Spin Again</button>
     </div>
+    <div id="wheel-result" style="margin-top:.8rem;font-size:18px;font-weight:700;color:var(--gold);min-height:28px;letter-spacing:.03em"></div>
+    <div id="wheel-count" style="display:none"></div>
   </div>
 
   <!-- IMPORT CUSTOM DRAW LIST -->
@@ -805,7 +779,7 @@ function showTab(id,el){
   if(id==='walkin'){popWiTbl();renderWiLog()}
   if(id==='admin'){popTblSel();renderTblList()}
   if(id==='share'){setTimeout(renderShareQRs,80)}
-  if(id==='lucky'){setTimeout(function(){if(currentDrawMode==='wheel')buildWheel()},100)}
+  if(id==='lucky'){setTimeout(buildWheel,100)}
 }
 
 /* ── METRICS ── */
@@ -1107,88 +1081,140 @@ function showTDtl(tid){
   det.classList.add('open');
 }
 
-/* ══ DRAW MODE TOGGLE ══ */
-var currentDrawMode='roll';
+/* ══ SPIN WHEEL — FULL 200 NAMES ══ */
 var wheelSpinning=false;
 var wheelAngle=0;
 var wheelWinner=null;
 var wheelSegments=[];
-
 var WHEEL_COLORS=[
   '#B8860B','#1a3a6b','#C8960C','#2a4a8b','#D4A017','#163060',
-  '#9a7200','#0d2550','#E8C040','#3a5a9b','#8B6508','#1e3870'
+  '#9a7200','#0d2550','#E8C040','#3a5a9b','#8B6508','#1e3870',
+  '#c8a020','#243f7a','#a07800','#112040','#d4aa30','#304f8a'
 ];
 
-function setDrawMode(mode){
-  currentDrawMode=mode;
-  document.getElementById('mode-roll').style.display=mode==='roll'?'block':'none';
-  document.getElementById('mode-wheel').style.display=mode==='wheel'?'block':'none';
-  document.getElementById('mode-roll-btn').style.background=mode==='roll'?'var(--gold)':'var(--white)';
-  document.getElementById('mode-roll-btn').style.color=mode==='roll'?'#fff':'var(--ink-light)';
-  document.getElementById('mode-wheel-btn').style.background=mode==='wheel'?'var(--gold)':'var(--white)';
-  document.getElementById('mode-wheel-btn').style.color=mode==='wheel'?'#fff':'var(--ink-light)';
-  if(mode==='wheel')buildWheel();
-}
 
-function syncPool(){
-  var rp=document.getElementById('draw-pool');
-  var wp=document.getElementById('wheel-pool');
-  if(rp&&wp){
-    if(document.activeElement===rp)wp.value=rp.value;
-    else rp.value=wp.value;
+
+function spinWheel(){
+  if(wheelSpinning)return;
+  var pool=getWheelPool();
+  if(!pool.length){showToast('No guests in pool! Check in guests first.');return}
+  buildWheel();
+  if(!wheelSegments.length)return;
+  var canvas=document.getElementById('wheel-canvas');
+  var n=wheelSegments.length;
+  var arc=2*Math.PI/n;
+  /* pick random winner BEFORE spinning */
+  var winnerIdx=Math.floor(Math.random()*n);
+  /* 
+    Pointer is at TOP (12 o'clock = -PI/2).
+    Wheel segments start at wheelAngle and go clockwise.
+    We want segment winnerIdx centred under the pointer.
+    Centre of winnerIdx = wheelAngle + winnerIdx*arc + arc/2
+    We need that = -PI/2 (top) + k*2PI for some integer k
+    So add to wheelAngle: (-PI/2 - winnerIdx*arc - arc/2) - wheelAngle + k*2PI
+  */
+  var fullSpins=(8+Math.floor(Math.random()*5))*Math.PI*2;
+  var targetWheelAngle=-Math.PI/2-(winnerIdx*arc+arc/2);
+  /* normalise so we always spin forward */
+  var diff=((targetWheelAngle-wheelAngle)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+  if(diff<0.1)diff+=Math.PI*2; /* always spin at least once */
+  var spinTo=wheelAngle+fullSpins+diff;
+  var duration=7000+Math.random()*2000;
+  var startAngle=wheelAngle;
+  var startTime=null;
+  var lastTickAngle=wheelAngle;
+  var tickThreshold=arc; /* one tick per segment */
+  wheelSpinning=true;
+  wheelWinner=null;
+  document.getElementById('wheel-spin-btn').style.display='none';
+  document.getElementById('wheel-confirm-btn').style.display='none';
+  document.getElementById('wheel-redraw-btn').style.display='none';
+  document.getElementById('wheel-result').textContent='';
+
+  function easeOut(t){return 1-Math.pow(1-t,4)}
+  function tick(ts){
+    if(!startTime)startTime=ts;
+    var elapsed=ts-startTime;
+    var progress=Math.min(elapsed/duration,1);
+    var eased=easeOut(progress);
+    wheelAngle=startAngle+(spinTo-startAngle)*eased;
+    /* play tick sound each time we cross a segment boundary */
+    var moved=Math.abs(wheelAngle-lastTickAngle);
+    if(moved>=tickThreshold){
+      var speed=1-eased; /* 1=fast, 0=stopped */
+      var vol=0.15+speed*0.35;
+      playTick(vol);
+      lastTickAngle=wheelAngle;
+    }
+    drawWheel(canvas,wheelAngle);
+    if(progress<1){
+      requestAnimationFrame(tick);
+    } else {
+      wheelAngle=spinTo;
+      wheelSpinning=false;
+      wheelWinner=wheelSegments[winnerIdx];
+      /* auto popup winner immediately */
+      document.getElementById('wo-name').textContent=wheelWinner.name;
+      document.getElementById('wo-desig').textContent=wheelWinner.desig||'';
+      document.getElementById('wo-co').textContent=wheelWinner.co||'';
+      document.getElementById('winner-overlay').classList.add('show');
+      playFanfare();
+      setTimeout(launchConfetti,200);
+      /* record draw */
+      draws.push({
+        id:wheelWinner.id||'',name:wheelWinner.name,
+        co:wheelWinner.co||'',desig:wheelWinner.desig||'',
+        cat:wheelWinner.cat||'',facode:wheelWinner.facode||'',
+        time:new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}),
+        round:draws.length+1
+      });
+      upMetrics();renderDrawHist();updatePoolStatus();
+      /* show spin again button after overlay */
+      document.getElementById('wheel-spin-btn').style.display='';
+      wheelWinner=null;
+      /* rebuild wheel with winner removed after short delay */
+      setTimeout(buildWheel,800);
+    }
   }
-  if(currentDrawMode==='wheel')buildWheel();
+  requestAnimationFrame(tick);
 }
 
-/* ── BUILD WHEEL ── */
+function confirmWheelDraw(){/* auto-handled in spinWheel */}
+
+var WHEEL_COLORS=[
+  '#FF6B6B','#FF8E53','#FFC300','#2ECC71','#1ABC9C',
+  '#3498DB','#9B59B6','#E91E63','#FF5722','#00BCD4',
+  '#8BC34A','#FF9800','#E040FB','#00E676','#2979FF',
+  '#FF1744','#F9A825','#00BFA5','#AA00FF','#C6FF00'
+];
+
 function buildWheel(){
   var pool=getWheelPool();
   var canvas=document.getElementById('wheel-canvas');
   if(!canvas)return;
-  var wc=document.getElementById('wheel-count');
-  if(wc)wc.textContent=pool.length+' participants in pool';
-  if(!pool.length){
-    drawEmptyWheel(canvas);
-    document.getElementById('wheel-result').textContent='No guests in pool. Check in guests first.';
-    return;
-  }
   document.getElementById('wheel-result').textContent='';
   document.getElementById('wheel-spin-btn').style.display='';
   document.getElementById('wheel-confirm-btn').style.display='none';
   document.getElementById('wheel-redraw-btn').style.display='none';
-  /* limit segments to 30 for readability — random sample if more */
-  wheelSegments=pool.length>30?shuffleArr(pool.slice()).slice(0,30):pool.slice();
-  drawWheel(canvas,wheelAngle);
-}
-
-function getWheelPool(){
-  var sel=document.getElementById('wheel-pool');
-  var pool=sel?sel.value:'all';
-  if(pool==='custom'){
-    var drawn=new Set(draws.map(function(d){return d.name}));
-    return (customDrawPool.length?customDrawPool:guests.filter(function(g){return g.ci})).filter(function(p){return !drawn.has(p.name)});
+  if(!pool.length){
+    drawEmptyWheel(canvas);
+    document.getElementById('wheel-result').textContent='No guests in pool.';
+    return;
   }
-  var base=guests.filter(function(g){return g.ci});
-  if(pool==='mdrt')base=base.filter(function(g){return g.cat==='MDRT Member'});
-  else if(pool==='cot')base=base.filter(function(g){return g.cat==='Court of the Table'});
-  else if(pool==='tot')base=base.filter(function(g){return g.cat==='Top of the Table'});
-  else if(pool==='notdrawn'){var drawn2=new Set(draws.map(function(d){return d.id}));base=base.filter(function(g){return !drawn2.has(g.id)})}
-  return base;
-}
-
-function shuffleArr(arr){
-  for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t}
-  return arr;
+  wheelSegments=pool.slice();
+  drawWheel(canvas,wheelAngle);
 }
 
 function drawEmptyWheel(canvas){
   var ctx=canvas.getContext('2d');
-  var cx=canvas.width/2,cy=canvas.height/2,r=cx-10;
+  var cx=canvas.width/2,cy=canvas.height/2,r=cx-8;
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath();ctx.arc(cx,cy,r+6,0,Math.PI*2);
+  ctx.fillStyle='#B8860B';ctx.fill();
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle='#2C2416';ctx.fill();
-  ctx.strokeStyle='#B8860B';ctx.lineWidth=4;ctx.stroke();
-  ctx.fillStyle='#B8860B';ctx.font='bold 18px Segoe UI';ctx.textAlign='center';
+  ctx.fillStyle='#1a1200';ctx.fill();
+  ctx.fillStyle='#B8860B';ctx.font='bold 15px Segoe UI';
+  ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText('No guests in pool',cx,cy);
 }
 
@@ -1196,106 +1222,63 @@ function drawWheel(canvas,angle){
   var ctx=canvas.getContext('2d');
   var n=wheelSegments.length;
   if(!n){drawEmptyWheel(canvas);return}
-  var cx=canvas.width/2,cy=canvas.height/2,r=cx-6;
+  var cx=canvas.width/2,cy=canvas.height/2,r=cx-8;
   var arc=2*Math.PI/n;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  /* outer ring */
-  ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);
-  ctx.fillStyle='#B8860B';ctx.fill();
+  /* outer gold border ring */
+  ctx.beginPath();ctx.arc(cx,cy,r+8,0,Math.PI*2);
+  var grad=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+  grad.addColorStop(0,'#D4A017');grad.addColorStop(.5,'#F5E070');grad.addColorStop(1,'#B8860B');
+  ctx.fillStyle=grad;ctx.fill();
+  /* segments */
   for(var i=0;i<n;i++){
-    var start=angle+i*arc;var end=start+arc;
-    /* segment */
+    var start=angle+i*arc;
+    var end=start+arc;
     ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end);ctx.closePath();
-    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1.5;ctx.stroke();
-    /* text */
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
-    var name=wheelSegments[i].name||'';
-    var maxLen=n>15?10:14;
-    if(name.length>maxLen)name=name.substring(0,maxLen-1)+'…';
-    var fontSize=n>20?10:n>12?12:14;
-    ctx.font='bold '+fontSize+'px Segoe UI,Arial,sans-serif';
-    ctx.fillStyle='#fff';ctx.textAlign='right';
-    ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=3;
-    ctx.fillText(name,r-10,fontSize/3);
-    ctx.restore();
-  }
-  /* inner shadow circle */
-  ctx.beginPath();ctx.arc(cx,cy,30,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fill();
-}
-
-/* ── SPIN WHEEL ── */
-function spinWheel(){
-  if(wheelSpinning)return;
-  var pool=getWheelPool();
-  if(!pool.length){showToast('No guests in pool!');return}
-  buildWheel();
-  var canvas=document.getElementById('wheel-canvas');
-  var n=wheelSegments.length;
-  /* pick random winner index */
-  var winnerIdx=Math.floor(Math.random()*n);
-  var arc=2*Math.PI/n;
-  /* calculate target angle so winner lands at pointer (right = 0°) */
-  var extra=Math.PI*2*(5+Math.random()*3); /* 5-8 full spins */
-  var targetAngle=extra-(winnerIdx*arc+arc/2-Math.PI/2*0);
-  /* The pointer is at right (angle=0), we want winnerIdx segment centred at angle 0 (right) */
-  /* So target = -(winnerIdx * arc + arc/2) + random full spins */
-  var spinTo=wheelAngle+extra+((Math.PI*2-(wheelAngle%( Math.PI*2))))+( Math.PI*1.5-(winnerIdx*arc+arc/2));
-  var duration=5000+Math.random()*2000;
-  var start=null;
-  var startAngle=wheelAngle;
-  wheelSpinning=true;
-  document.getElementById('wheel-spin-btn').style.display='none';
-  document.getElementById('wheel-confirm-btn').style.display='none';
-  document.getElementById('wheel-redraw-btn').style.display='none';
-  document.getElementById('wheel-result').textContent='Spinning…';
-  playDrumRoll();
-  function easeOut(t){return 1-Math.pow(1-t,4)}
-  function animate(ts){
-    if(!start)start=ts;
-    var elapsed=ts-start;
-    var progress=Math.min(elapsed/duration,1);
-    var eased=easeOut(progress);
-    wheelAngle=startAngle+(spinTo-startAngle)*eased;
-    drawWheel(canvas,wheelAngle);
-    if(progress<1){requestAnimationFrame(animate)}
-    else{
-      wheelAngle=spinTo;
-      wheelSpinning=false;
-      /* find actual winner by checking which segment is at pointer */
-      var norm=((wheelAngle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
-      var pointerAngle=(Math.PI*2-norm+Math.PI*2)%(Math.PI*2);
-      var idx=Math.floor(pointerAngle/arc)%n;
-      wheelWinner=wheelSegments[idx];
-      document.getElementById('wheel-result').textContent='🎉 '+wheelWinner.name+'!';
-      document.getElementById('wheel-result').style.color='var(--gold)';
-      document.getElementById('wheel-confirm-btn').style.display='';
-      document.getElementById('wheel-redraw-btn').style.display='';
-      /* mini fanfare */
-      playFanfare();
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];
+    ctx.fill();
+    /* segment separator */
+    ctx.strokeStyle='rgba(255,255,255,.5)';
+    ctx.lineWidth=1.2;ctx.stroke();
+    /* name text */
+    if(n<=200){
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(start+arc/2);
+      var name=wheelSegments[i].name||'';
+      var fs=n>120?6:n>80?7:n>50?8:n>30?10:n>15?12:14;
+      var maxL=n>100?5:n>60?7:n>30?9:12;
+      var label=name.length>maxL?name.substring(0,maxL)+'…':name;
+      ctx.font='bold '+fs+'px Segoe UI,Arial,sans-serif';
+      ctx.fillStyle='#fff';
+      ctx.textAlign='right';
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(0,0,0,.7)';
+      ctx.shadowBlur=3;
+      var tr=n>100?r-3:n>50?r-5:r-8;
+      ctx.fillText(label,tr,0);
+      ctx.restore();
     }
   }
-  requestAnimationFrame(animate);
-}
-
-function confirmWheelDraw(){
-  if(!wheelWinner)return;
-  var w=wheelWinner;
-  draws.push({id:w.id||'',name:w.name,co:w.co||'',desig:w.desig||'',cat:w.cat||'',facode:w.facode||'',time:new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}),round:draws.length+1});
-  upMetrics();renderDrawHist();updatePoolStatus();
-  document.getElementById('wo-name').textContent=w.name;
-  document.getElementById('wo-desig').textContent=w.desig||'';
-  document.getElementById('wo-co').textContent=w.co||'';
-  document.getElementById('winner-overlay').classList.add('show');
-  playFanfare();setTimeout(launchConfetti,200);
-  wheelWinner=null;
-  document.getElementById('wheel-confirm-btn').style.display='none';
-  document.getElementById('wheel-redraw-btn').style.display='none';
-  document.getElementById('wheel-spin-btn').style.display='';
-  document.getElementById('wheel-result').textContent='';
-  setTimeout(buildWheel,600);
+  /* inner hub shadow */
+  ctx.beginPath();ctx.arc(cx,cy,28,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fill();
+  /* pointer triangle at TOP */
+  ctx.save();
+  ctx.translate(cx,8);
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.lineTo(-14,28);
+  ctx.lineTo(14,28);
+  ctx.closePath();
+  ctx.fillStyle='#fff';
+  ctx.shadowColor='rgba(0,0,0,.5)';
+  ctx.shadowBlur=6;
+  ctx.fill();
+  ctx.strokeStyle='#B8860B';ctx.lineWidth=2;ctx.stroke();
+  ctx.restore();
 }
 
 
@@ -1363,58 +1346,45 @@ function updatePoolStatus(){
   el.style.color='var(--gold)';
 }
 
-function getDrawPool(){
-  var pool=document.getElementById('draw-pool').value;
-  if(pool==='custom'){
-    var drawn=new Set(draws.map(function(d){return d.name}));
-    return customDrawPool.filter(function(p){return !drawn.has(p.name)});
-  }
-  var base=guests.filter(function(g){return g.ci});
-  if(pool==='mdrt')base=base.filter(function(g){return g.cat==='MDRT Member'});
-  else if(pool==='cot')base=base.filter(function(g){return g.cat==='Court of the Table'});
-  else if(pool==='tot')base=base.filter(function(g){return g.cat==='Top of the Table'});
-  else if(pool==='notdrawn'){var drawn2=new Set(draws.map(function(d){return d.id}));base=base.filter(function(g){return !drawn2.has(g.id)})}
-  return base;
-}
+/* getDrawPool merged into getWheelPool */
 
-function playDrumRoll(){
+/* ── WHEEL TICK SOUND (like wheelofnames.com) ── */
+var _ac=null;
+function getAC(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac}
+function playTick(vol){
   try{
-    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    var duration=3.5;
-    var startTime=audioCtx.currentTime;
-    for(var i=0;i<60;i++){
-      var osc=audioCtx.createOscillator();
-      var gain=audioCtx.createGain();
-      osc.connect(gain);gain.connect(audioCtx.destination);
-      osc.frequency.value=200+Math.random()*100;
-      osc.type='triangle';
-      var t=startTime+(i*(duration/60));
-      gain.gain.setValueAtTime(0,t);
-      gain.gain.linearRampToValueAtTime(0.15,t+0.02);
-      gain.gain.linearRampToValueAtTime(0,t+0.06);
-      osc.start(t);osc.stop(t+0.08);
-    }
+    var ac=getAC();
+    var buf=ac.createBuffer(1,ac.sampleRate*0.04,ac.sampleRate);
+    var d=buf.getChannelData(0);
+    for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(ac.sampleRate*0.008));
+    var src=ac.createBufferSource();
+    src.buffer=buf;
+    var g=ac.createGain();g.gain.value=vol||0.35;
+    src.connect(g);g.connect(ac.destination);src.start();
   }catch(e){}
 }
-
+function playDrumRoll(){}/* ticks handled live during spin */
 function playFanfare(){
   try{
-    var ac=new(window.AudioContext||window.webkitAudioContext)();
-    var notes=[523,659,784,1047,784,1047,1047];
-    var times=[0,.12,.24,.4,.52,.6,.72];
+    var ac=getAC();
+    var notes=[523,659,784,1047,1319,1047,1319,1568];
+    var times=[0,.1,.2,.35,.5,.62,.72,.85];
+    var durs=[.18,.18,.18,.22,.18,.12,.12,.4];
     notes.forEach(function(freq,i){
       var osc=ac.createOscillator();
-      var gain=ac.createGain();
-      osc.connect(gain);gain.connect(ac.destination);
+      var g=ac.createGain();
+      osc.connect(g);g.connect(ac.destination);
       osc.frequency.value=freq;osc.type='sine';
       var t=ac.currentTime+times[i];
-      gain.gain.setValueAtTime(0,t);
-      gain.gain.linearRampToValueAtTime(0.4,t+0.05);
-      gain.gain.linearRampToValueAtTime(0,t+0.18);
-      osc.start(t);osc.stop(t+0.2);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.45,t+0.04);
+      g.gain.linearRampToValueAtTime(0,t+durs[i]);
+      osc.start(t);osc.stop(t+durs[i]+0.05);
     });
   }catch(e){}
 }
+
+/* playFanfare defined above */
 
 function launchConfetti(){
   var canvas=document.getElementById('confetti-canvas');
@@ -1452,55 +1422,8 @@ function launchConfetti(){
   requestAnimationFrame(draw);
 }
 
-function startDraw(){
-  var pool=getDrawPool();
-  if(!pool.length){showToast('No eligible guests in pool');return}
-  document.getElementById('draw-btn').style.display='none';
-  document.getElementById('confirm-btn').style.display='';
-  document.getElementById('cancel-btn').style.display='';
-  playDrumRoll();
-  var count=0;clearInterval(drawTimer);
-  drawTimer=setInterval(function(){
-    var r=pool[Math.floor(Math.random()*pool.length)];
-    document.getElementById('draw-name').textContent=r.name;
-    document.getElementById('draw-name').className='draw-name draw-roll';
-    document.getElementById('draw-desig').textContent=r.desig||'';
-    document.getElementById('draw-co').textContent=r.co||'';
-    drawPending=r;count++;
-    if(count>42){clearInterval(drawTimer);document.getElementById('draw-name').className='draw-name'}
-  },80);
-}
-
-function confirmDraw(){
-  clearInterval(drawTimer);if(!drawPending)return;
-  draws.push({id:drawPending.id,name:drawPending.name,co:drawPending.co||'',desig:drawPending.desig||'',cat:drawPending.cat||'',facode:drawPending.facode||'',time:new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}),round:draws.length+1});
-  upMetrics();renderDrawHist();updatePoolStatus();
-  // Show winner overlay with fanfare + confetti
-  document.getElementById('wo-name').textContent=drawPending.name;
-  document.getElementById('wo-desig').textContent=drawPending.desig||'';
-  document.getElementById('wo-co').textContent=drawPending.co||'';
-  document.getElementById('winner-overlay').classList.add('show');
-  playFanfare();
-  setTimeout(launchConfetti,200);
-  drawPending=null;
-  document.getElementById('draw-btn').style.display='';
-  document.getElementById('confirm-btn').style.display='none';
-  document.getElementById('cancel-btn').style.display='none';
-}
-
 function closeWinner(){
   document.getElementById('winner-overlay').classList.remove('show');
-}
-
-function cancelDraw(){
-  clearInterval(drawTimer);drawPending=null;
-  document.getElementById('draw-name').textContent='—';
-  document.getElementById('draw-name').className='draw-name';
-  document.getElementById('draw-desig').textContent='';
-  document.getElementById('draw-co').textContent='';
-  document.getElementById('draw-btn').style.display='';
-  document.getElementById('confirm-btn').style.display='none';
-  document.getElementById('cancel-btn').style.display='none';
 }
 
 function renderDrawHist(){
