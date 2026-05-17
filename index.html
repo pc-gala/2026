@@ -424,7 +424,6 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 
 <div class="tabs">
   <button class="tab active" id="tab-scan" onclick="showTab('scan',this)">Check-In</button>
-  <button class="tab" id="tab-walkin" onclick="showTab('walkin',this)">Walk-In</button>
   <button class="tab" id="tab-guests" onclick="showTab('guests',this)">Guest List</button>
   <button class="tab" id="tab-tables" onclick="showTab('tables',this)">Table Map</button>
   <button class="tab" id="tab-share" onclick="showTab('share',this)">Share</button>
@@ -453,32 +452,6 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
   </div>
 </div>
 
-<!-- WALK-IN TAB -->
-<div class="sec" id="tab-sec-walkin">
-  <div class="card">
-    <div class="card-title">On-site / Walk-in Registration</div>
-    <div class="walk-box">
-      <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px;font-style:italic">Register a guest not on the original list. Auto-assigned to an available table.</p>
-      <div class="ag">
-        <div>
-          <div class="fg"><label>Full Name *</label><input type="text" id="wi-name" placeholder="e.g. Tan Wei Ming"/></div>
-          <div class="fg"><label>Company / Agency</label><input type="text" id="wi-co" placeholder="e.g. Phillip Capital"/></div>
-          <div class="fg"><label>Designation</label><input type="text" id="wi-desig" placeholder="e.g. Senior FA"/></div>
-        </div>
-        <div>
-          <div class="fg"><label>FA Code</label><input type="text" id="wi-facode" placeholder="e.g. FA201"/></div>
-          <div class="fg"><label>Category</label>
-            <select id="wi-cat"><option>MDRT Member</option><option>Court of the Table</option><option>Top of the Table</option><option>VIP Guest</option><option>Walk-in</option></select>
-          </div>
-          <div class="fg"><label>Table</label><select id="wi-tbl"><option value="">Auto-assign</option></select></div>
-        </div>
-      </div>
-      <button class="btn btn-gold" onclick="walkIn()">Register & Check In</button>
-    </div>
-    <div class="card-title" style="margin-top:.5rem">Walk-in Log <span id="wi-count" style="font-size:11px;color:var(--ink-light);font-weight:normal"></span></div>
-    <div id="wi-log" style="font-size:12px;color:var(--ink-light)">No walk-ins yet.</div>
-  </div>
-</div>
 
 <!-- GUEST LIST TAB -->
 <div class="sec" id="tab-sec-guests">
@@ -617,35 +590,6 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 <!-- ADMIN TAB -->
 <div class="sec" id="tab-sec-admin">
   <div class="card">
-    <div class="card-title">Add Guest</div>
-    <div class="ag">
-      <div>
-        <div class="fg"><label>Full Name *</label><input type="text" id="a-name" placeholder="e.g. Lim Beng Huat"/></div>
-        <div class="fg"><label>Company / Agency</label><input type="text" id="a-co" placeholder="e.g. Phillip Capital"/></div>
-        <div class="fg"><label>Designation</label><input type="text" id="a-desig" placeholder="e.g. Financial Consultant"/></div>
-        <div class="fg"><label>Email</label><input type="text" id="a-email" placeholder="e.g. lim@phillip.com"/></div>
-      </div>
-      <div>
-        <div class="fg"><label>FA Code *</label><input type="text" id="a-facode" placeholder="e.g. FA001"/></div>
-        <div class="fg"><label>Phone</label><input type="text" id="a-ph" placeholder="+65 9000 0000"/></div>
-        <div class="fg"><label>Category</label>
-          <select id="a-cat"><option>MDRT Member</option><option>Court of the Table</option><option>Top of the Table</option><option>VIP Guest</option><option>Staff</option></select>
-        </div>
-        <div class="fg"><label>Table Assignment</label><select id="a-tbl"><option value="">— select —</option></select></div>
-      </div>
-    </div>
-    <button class="btn btn-gold" onclick="addGuest()">Add Guest</button>
-  </div>
-  <div class="card">
-    <div class="card-title">Manage Tables</div>
-    <div class="row">
-      <input type="text" id="t-name" placeholder="Table name (e.g. Prestige Circle)" style="flex:1"/>
-      <input type="number" id="t-cap" value="10" min="1" max="20" style="width:70px"/>
-      <button class="btn" onclick="addTable()">Add Table</button>
-    </div>
-    <div id="tbl-list" style="font-size:12px;color:var(--ink-light)">No tables yet.</div>
-  </div>
-  <div class="card">
     <div class="card-title">Data Management</div>
     <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px;font-style:italic">Data loads live from Google Sheets. Admin view auto-refreshes every 30 seconds.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -776,7 +720,6 @@ function showTab(id,el){
   el.classList.add('active');
   if(id==='tables'){renderTMap()}
   if(id==='guests'){renderGuests(document.getElementById('gsearch')?document.getElementById('gsearch').value:'')}
-  if(id==='walkin'){popWiTbl();renderWiLog()}
   if(id==='admin'){popTblSel();renderTblList()}
   if(id==='share'){setTimeout(renderShareQRs,80)}
   if(id==='lucky'){setTimeout(buildWheel,100)}
@@ -1182,10 +1125,10 @@ function spinWheel(){
 function confirmWheelDraw(){/* auto-handled in spinWheel */}
 
 var WHEEL_COLORS=[
-  '#FF6B6B','#FF8E53','#FFC300','#2ECC71','#1ABC9C',
-  '#3498DB','#9B59B6','#E91E63','#FF5722','#00BCD4',
-  '#8BC34A','#FF9800','#E040FB','#00E676','#2979FF',
-  '#FF1744','#F9A825','#00BFA5','#AA00FF','#C6FF00'
+  '#EE4040','#F0A030','#45C542','#2589BD','#EA5AB9',
+  '#F06030','#3DB8C8','#9B59B6','#27AE60','#E91E8C',
+  '#FF6B35','#1ABC9C','#E74C3C','#3498DB','#F39C12',
+  '#8E44AD','#16A085','#C0392B','#2980B9','#D35400'
 ];
 
 function buildWheel(){
@@ -1317,25 +1260,38 @@ function parseDrawCSV(text){
     }
   }
   updatePoolStatus();
-  document.getElementById('draw-pool').value='custom';
+  var wp=document.getElementById('wheel-pool');
+  if(wp)wp.value='custom';
   showToast('Imported '+customDrawPool.length+' names into draw pool!');
+  buildWheel();
 }
 function importDrawList(){
   var text=document.getElementById('draw-paste-area').value.trim();
   if(!text){showToast('Paste some names first.');return}
   var sep=document.getElementById('csv-sep').value;
-  if(text.includes(sep)&&text.split('\n').length>1){parseDrawCSV(text);}
-  else{
+  if(text.includes(sep)&&text.split('\n').length>1){
+    parseDrawCSV(text);
+  } else {
     var lines=text.split(/\r?\n/).filter(function(l){return l.trim()});
     customDrawPool=lines.map(function(l){return{name:l.trim(),desig:'',co:'',cat:''}}).filter(function(p){return p.name});
-    updatePoolStatus();document.getElementById('draw-pool').value='custom';
+    if(!customDrawPool.length){showToast('No names found. Paste one name per line.');return}
+    updatePoolStatus();
     showToast('Imported '+customDrawPool.length+' names!');
   }
+  /* switch pool selector to custom and rebuild wheel */
+  var wp=document.getElementById('wheel-pool');
+  if(wp)wp.value='custom';
   document.getElementById('draw-paste-area').value='';
+  buildWheel();
 }
 function clearCustomPool(){
-  customDrawPool=[];document.getElementById('draw-paste-area').value='';
-  updatePoolStatus();showToast('Custom draw list cleared.');
+  customDrawPool=[];
+  document.getElementById('draw-paste-area').value='';
+  var wp=document.getElementById('wheel-pool');
+  if(wp)wp.value='all';
+  updatePoolStatus();
+  buildWheel();
+  showToast('Custom draw list cleared.');
 }
 function updatePoolStatus(){
   var el=document.getElementById('draw-pool-status');if(!el)return;
