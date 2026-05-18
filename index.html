@@ -526,12 +526,12 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
       </select>
       <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">↺ Refresh</button>
     </div>
-    <!-- WHEEL CONTAINER -->
-    <div style="position:relative;display:inline-block;margin:0 auto">
-      <canvas id="wheel-canvas" width="460" height="460" style="max-width:min(460px,88vw);height:auto;border-radius:50%;box-shadow:0 8px 48px rgba(0,0,0,.45);cursor:pointer;display:block" onclick="spinWheel()"></canvas>
+    <!-- WHEEL CONTAINER — extra right padding for pointer -->
+    <div style="position:relative;display:inline-block;margin:0 auto;padding-right:36px">
+      <canvas id="wheel-canvas" width="460" height="460" style="max-width:min(420px,82vw);height:auto;border-radius:50%;box-shadow:0 8px 48px rgba(0,0,0,.4);cursor:pointer;display:block" onclick="spinWheel()"></canvas>
       <!-- centre hub -->
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;background:linear-gradient(135deg,#D4A017,#8B6508);border-radius:50%;border:4px solid #fff;box-shadow:0 2px 14px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5" onclick="spinWheel()">
-        <span style="color:#fff;font-size:20px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)">✦</span>
+      <div style="position:absolute;top:50%;left:calc(50% - 18px);transform:translate(-50%,-50%);width:52px;height:52px;background:linear-gradient(135deg,#D4A017,#7d5c00);border-radius:50%;border:4px solid #fff;box-shadow:0 2px 14px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5" onclick="spinWheel()">
+        <span style="color:#fff;font-size:18px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)">✦</span>
       </div>
     </div>
     <div style="margin-top:1rem;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
@@ -1039,84 +1039,84 @@ var WHEEL_COLORS=[
 
 function spinWheel(){
   if(wheelSpinning)return;
+  /* rebuild pool each time */
   var pool=getWheelPool();
-  if(!pool.length){showToast('No guests in pool! Check in guests first.');return}
-  buildWheel();
-  if(!wheelSegments.length)return;
+  if(!pool.length){showToast('No names in pool! Import names or check in guests first.');return;}
+  wheelSegments=pool.slice();
   var canvas=document.getElementById('wheel-canvas');
   var n=wheelSegments.length;
   var arc=2*Math.PI/n;
-  /* pick random winner BEFORE spinning */
+  /* pick winner randomly */
   var winnerIdx=Math.floor(Math.random()*n);
-  /* 
-    Pointer is at TOP (12 o'clock = -PI/2).
-    Wheel segments start at wheelAngle and go clockwise.
-    We want segment winnerIdx centred under the pointer.
-    Centre of winnerIdx = wheelAngle + winnerIdx*arc + arc/2
-    We need that = -PI/2 (top) + k*2PI for some integer k
-    So add to wheelAngle: (-PI/2 - winnerIdx*arc - arc/2) - wheelAngle + k*2PI
+  /*
+    Pointer is at RIGHT = angle 0.
+    Segment i spans from: (wheelAngle + i*arc) to (wheelAngle + i*arc + arc)
+    Centre of segment i is at: wheelAngle + i*arc + arc/2
+    We want that centre == 0 (mod 2PI)  =>  wheelAngle_final = -(i*arc + arc/2)
+    Add full spins for excitement.
   */
-  var fullSpins=(8+Math.floor(Math.random()*5))*Math.PI*2;
-  var targetWheelAngle=-Math.PI/2-(winnerIdx*arc+arc/2);
-  /* normalise so we always spin forward */
-  var diff=((targetWheelAngle-wheelAngle)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
-  if(diff<0.1)diff+=Math.PI*2; /* always spin at least once */
-  var spinTo=wheelAngle+fullSpins+diff;
-  var duration=7000+Math.random()*2000;
-  var startAngle=wheelAngle;
-  var startTime=null;
-  var lastTickAngle=wheelAngle;
-  var tickThreshold=arc; /* one tick per segment */
-  wheelSpinning=true;
-  wheelWinner=null;
+  var targetBase = -(winnerIdx*arc + arc/2);
+  var fullSpins = (8 + Math.floor(Math.random()*5)) * Math.PI*2;
+  /* make sure we spin forward from current angle */
+  var raw = targetBase + fullSpins;
+  /* ensure raw > wheelAngle */
+  while(raw <= wheelAngle + Math.PI*4) raw += Math.PI*2;
+  var spinTo = raw;
+  var duration = 7000 + Math.random()*2000;
+  var startAngle = wheelAngle;
+  var startTime = null;
+  var lastTickAngle = wheelAngle;
+  wheelSpinning = true;
+  wheelWinner = null;
   document.getElementById('wheel-spin-btn').style.display='none';
   document.getElementById('wheel-confirm-btn').style.display='none';
   document.getElementById('wheel-redraw-btn').style.display='none';
   document.getElementById('wheel-result').textContent='';
+  /* draw initial state */
+  _drawWheel(canvas, wheelAngle);
 
-  function easeOut(t){return 1-Math.pow(1-t,4)}
+  function easeOut(t){ return 1 - Math.pow(1-t, 4); }
+
   function tick(ts){
-    if(!startTime)startTime=ts;
-    var elapsed=ts-startTime;
-    var progress=Math.min(elapsed/duration,1);
-    var eased=easeOut(progress);
-    wheelAngle=startAngle+(spinTo-startAngle)*eased;
-    /* play tick sound each time we cross a segment boundary */
-    var moved=Math.abs(wheelAngle-lastTickAngle);
-    if(moved>=tickThreshold){
-      var speed=1-eased; /* 1=fast, 0=stopped */
-      var vol=0.15+speed*0.35;
-      playTick(vol);
-      lastTickAngle=wheelAngle;
+    if(!startTime) startTime=ts;
+    var elapsed = ts - startTime;
+    var progress = Math.min(elapsed/duration, 1);
+    var eased = easeOut(progress);
+    wheelAngle = startAngle + (spinTo - startAngle)*eased;
+    /* tick sound — fires once per segment crossed */
+    var moved = Math.abs(wheelAngle - lastTickAngle);
+    if(moved >= arc){
+      var speed = 1 - eased;
+      playTick(0.12 + speed*0.4);
+      lastTickAngle = wheelAngle;
     }
-    drawWheel(canvas,wheelAngle);
-    if(progress<1){
+    _drawWheel(canvas, wheelAngle);
+    if(progress < 1){
       requestAnimationFrame(tick);
     } else {
-      wheelAngle=spinTo;
-      wheelSpinning=false;
-      wheelWinner=wheelSegments[winnerIdx];
-      /* auto popup winner immediately */
-      document.getElementById('wo-name').textContent=wheelWinner.name;
-      document.getElementById('wo-desig').textContent=wheelWinner.desig||'';
-      document.getElementById('wo-co').textContent=wheelWinner.co||'';
+      wheelAngle = spinTo;
+      wheelSpinning = false;
+      _drawWheel(canvas, wheelAngle);
+      wheelWinner = wheelSegments[winnerIdx];
+      /* show winner overlay immediately */
+      document.getElementById('wo-name').textContent = wheelWinner.name;
+      document.getElementById('wo-desig').textContent = wheelWinner.desig||'';
+      document.getElementById('wo-co').textContent = wheelWinner.co||'';
       document.getElementById('winner-overlay').classList.add('show');
       playFanfare();
-      setTimeout(launchConfetti,200);
-      /* record draw */
+      setTimeout(launchConfetti, 200);
+      /* record in history */
       draws.push({
-        id:wheelWinner.id||'',name:wheelWinner.name,
-        co:wheelWinner.co||'',desig:wheelWinner.desig||'',
-        cat:wheelWinner.cat||'',facode:wheelWinner.facode||'',
-        time:new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}),
-        round:draws.length+1
+        id: wheelWinner.id||'', name: wheelWinner.name,
+        co: wheelWinner.co||'', desig: wheelWinner.desig||'',
+        cat: wheelWinner.cat||'', facode: wheelWinner.facode||'',
+        time: new Date().toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}),
+        round: draws.length+1
       });
-      upMetrics();renderDrawHist();updatePoolStatus();
-      /* show spin again button after overlay */
+      upMetrics(); renderDrawHist(); updatePoolStatus();
       document.getElementById('wheel-spin-btn').style.display='';
-      wheelWinner=null;
-      /* rebuild wheel with winner removed after short delay */
-      setTimeout(buildWheel,800);
+      wheelWinner = null;
+      setTimeout(buildWheel, 1000);
     }
   }
   requestAnimationFrame(tick);
@@ -1124,12 +1124,39 @@ function spinWheel(){
 
 function confirmWheelDraw(){/* auto-handled in spinWheel */}
 
+/* ══════════════════════════════════════════
+   SPIN WHEEL — complete rewrite
+   Pointer at RIGHT (3 o'clock) like wheelofnames.com
+   Works with 1–200+ names, vibrant colours, tick sounds
+══════════════════════════════════════════ */
+
 var WHEEL_COLORS=[
-  '#EE4040','#F0A030','#45C542','#2589BD','#EA5AB9',
-  '#F06030','#3DB8C8','#9B59B6','#27AE60','#E91E8C',
-  '#FF6B35','#1ABC9C','#E74C3C','#3498DB','#F39C12',
-  '#8E44AD','#16A085','#C0392B','#2980B9','#D35400'
+  '#e53935','#8e24aa','#1e88e5','#43a047','#fb8c00',
+  '#00897b','#d81b60','#3949ab','#039be5','#7cb342',
+  '#f4511e','#6d4c41','#00acc1','#5e35b1','#ffb300',
+  '#c0ca33','#0097a7','#b71c1c','#1565c0','#2e7d32'
 ];
+
+function getWheelPool(){
+  var sel=document.getElementById('wheel-pool');
+  var pool=sel?sel.value:'all';
+  var drawn=new Set(draws.map(function(d){return d.name}));
+  if(pool==='custom'){
+    if(!customDrawPool.length){
+      /* fallback: use all guests */
+      return guests.map(function(g){return{name:g.name,desig:g.desig||'',co:g.co||'',cat:g.cat||'',id:g.id,facode:g.facode||''};});
+    }
+    return customDrawPool.filter(function(p){return !drawn.has(p.name)});
+  }
+  if(pool==='notdrawn'){
+    /* all guests not yet drawn */
+    return guests.filter(function(g){return !drawn.has(g.name)}).map(function(g){return{name:g.name,desig:g.desig||'',co:g.co||'',cat:g.cat||'',id:g.id,facode:g.facode||''};});
+  }
+  /* 'all' — use checked-in guests, fallback to ALL guests if none checked in */
+  var ci=guests.filter(function(g){return g.ci});
+  var base=ci.length?ci:guests;
+  return base.map(function(g){return{name:g.name,desig:g.desig||'',co:g.co||'',cat:g.cat||'',id:g.id,facode:g.facode||''};});
+}
 
 function buildWheel(){
   var pool=getWheelPool();
@@ -1140,88 +1167,112 @@ function buildWheel(){
   document.getElementById('wheel-confirm-btn').style.display='none';
   document.getElementById('wheel-redraw-btn').style.display='none';
   if(!pool.length){
-    drawEmptyWheel(canvas);
-    document.getElementById('wheel-result').textContent='No guests in pool.';
+    _drawEmpty(canvas);
+    document.getElementById('wheel-result').textContent='Import names or check in guests to use the wheel.';
     return;
   }
   wheelSegments=pool.slice();
-  drawWheel(canvas,wheelAngle);
+  _drawWheel(canvas, wheelAngle);
 }
 
-function drawEmptyWheel(canvas){
+function _drawEmpty(canvas){
   var ctx=canvas.getContext('2d');
-  var cx=canvas.width/2,cy=canvas.height/2,r=cx-8;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.beginPath();ctx.arc(cx,cy,r+6,0,Math.PI*2);
-  ctx.fillStyle='#B8860B';ctx.fill();
-  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle='#1a1200';ctx.fill();
-  ctx.fillStyle='#B8860B';ctx.font='bold 15px Segoe UI';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('No guests in pool',cx,cy);
+  var W=canvas.width, H=canvas.height, cx=W/2, cy=H/2, r=cx-10;
+  ctx.clearRect(0,0,W,H);
+  /* gold ring */
+  ctx.beginPath(); ctx.arc(cx,cy,r+8,0,Math.PI*2);
+  ctx.fillStyle='#B8860B'; ctx.fill();
+  /* dark fill */
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='#1a0e00'; ctx.fill();
+  ctx.fillStyle='#D4A017'; ctx.font='bold 14px Segoe UI';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Import names to get started',cx,cy-12);
+  ctx.font='12px Segoe UI'; ctx.fillStyle='#9a7200';
+  ctx.fillText('Paste names below → Import List',cx,cy+12);
+  /* draw pointer at right */
+  _drawPointer(ctx, W, H);
 }
 
-function drawWheel(canvas,angle){
+function _drawPointer(ctx, W, H){
+  var cx=W/2, cy=H/2, r=W/2-10;
+  /* white triangle pointing LEFT at right edge */
+  ctx.save();
+  ctx.translate(cx+r+18, cy);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(20, -12);
+  ctx.lineTo(20, 12);
+  ctx.closePath();
+  ctx.fillStyle='#fff';
+  ctx.shadowColor='rgba(0,0,0,.6)';
+  ctx.shadowBlur=8;
+  ctx.fill();
+  ctx.strokeStyle='#B8860B'; ctx.lineWidth=2; ctx.stroke();
+  ctx.restore();
+}
+
+function _drawWheel(canvas, angle){
   var ctx=canvas.getContext('2d');
+  var W=canvas.width, H=canvas.height;
+  var cx=W/2, cy=H/2, r=cx-10;
   var n=wheelSegments.length;
-  if(!n){drawEmptyWheel(canvas);return}
-  var cx=canvas.width/2,cy=canvas.height/2,r=cx-8;
+  if(!n){_drawEmpty(canvas);return;}
   var arc=2*Math.PI/n;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  /* outer gold border ring */
-  ctx.beginPath();ctx.arc(cx,cy,r+8,0,Math.PI*2);
-  var grad=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-  grad.addColorStop(0,'#D4A017');grad.addColorStop(.5,'#F5E070');grad.addColorStop(1,'#B8860B');
-  ctx.fillStyle=grad;ctx.fill();
-  /* segments */
+  ctx.clearRect(0,0,W,H);
+
+  /* outer decorative gold ring */
+  ctx.beginPath(); ctx.arc(cx,cy,r+8,0,Math.PI*2);
+  var grd=ctx.createLinearGradient(0,0,W,H);
+  grd.addColorStop(0,'#F5E070'); grd.addColorStop(.4,'#D4A017');
+  grd.addColorStop(.7,'#B8860B'); grd.addColorStop(1,'#8B6508');
+  ctx.fillStyle=grd; ctx.fill();
+
+  /* draw each segment */
   for(var i=0;i<n;i++){
-    var start=angle+i*arc;
-    var end=start+arc;
-    ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end);
+    var a0=angle+i*arc;
+    var a1=a0+arc;
+    /* fill segment */
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,a0,a1);
     ctx.closePath();
     ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];
     ctx.fill();
-    /* segment separator */
-    ctx.strokeStyle='rgba(255,255,255,.5)';
-    ctx.lineWidth=1.2;ctx.stroke();
-    /* name text */
-    if(n<=200){
-      ctx.save();
-      ctx.translate(cx,cy);
-      ctx.rotate(start+arc/2);
-      var name=wheelSegments[i].name||'';
-      var fs=n>120?6:n>80?7:n>50?8:n>30?10:n>15?12:14;
-      var maxL=n>100?5:n>60?7:n>30?9:12;
-      var label=name.length>maxL?name.substring(0,maxL)+'…':name;
-      ctx.font='bold '+fs+'px Segoe UI,Arial,sans-serif';
-      ctx.fillStyle='#fff';
-      ctx.textAlign='right';
-      ctx.textBaseline='middle';
-      ctx.shadowColor='rgba(0,0,0,.7)';
-      ctx.shadowBlur=3;
-      var tr=n>100?r-3:n>50?r-5:r-8;
-      ctx.fillText(label,tr,0);
-      ctx.restore();
-    }
+    /* white divider */
+    ctx.strokeStyle='rgba(255,255,255,0.6)';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    /* text label */
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(a0+arc/2);
+    var raw=wheelSegments[i].name||'';
+    /* adaptive sizing */
+    var fs,maxL;
+    if(n>=150){fs=6;maxL=4;}
+    else if(n>=100){fs=7;maxL=5;}
+    else if(n>=60){fs=8;maxL=7;}
+    else if(n>=30){fs=9;maxL=9;}
+    else if(n>=15){fs=11;maxL=11;}
+    else{fs=13;maxL=14;}
+    var label=raw.length>maxL?raw.slice(0,maxL)+'…':raw;
+    ctx.font='bold '+fs+'px Segoe UI,Arial,sans-serif';
+    ctx.fillStyle='#fff';
+    ctx.textAlign='right';
+    ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,.8)';
+    ctx.shadowBlur=2;
+    ctx.fillText(label, r-6, 0);
+    ctx.restore();
   }
-  /* inner hub shadow */
-  ctx.beginPath();ctx.arc(cx,cy,28,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fill();
-  /* pointer triangle at TOP */
-  ctx.save();
-  ctx.translate(cx,8);
-  ctx.beginPath();
-  ctx.moveTo(0,0);
-  ctx.lineTo(-14,28);
-  ctx.lineTo(14,28);
-  ctx.closePath();
-  ctx.fillStyle='#fff';
-  ctx.shadowColor='rgba(0,0,0,.5)';
-  ctx.shadowBlur=6;
-  ctx.fill();
-  ctx.strokeStyle='#B8860B';ctx.lineWidth=2;ctx.stroke();
-  ctx.restore();
+
+  /* centre shadow circle */
+  ctx.beginPath(); ctx.arc(cx,cy,24,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+
+  /* pointer at RIGHT (3 o'clock) — drawn outside wheel on canvas */
+  _drawPointer(ctx, W, H);
 }
 
 
