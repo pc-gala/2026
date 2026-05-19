@@ -545,13 +545,13 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
   <!-- SPIN WHEEL -->
   <div class="card" style="text-align:center;padding:1rem">
     <div style="margin-bottom:.8rem;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap">
-      <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase">Pool:</label>
+      <!-- <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase">Pool:</label>
       <select id="wheel-pool" style="font-size:12px;padding:5px 8px" onchange="buildWheel()">
         <option value="all">All checked-in guests</option>
         <option value="custom">Custom import list</option>
         <option value="notdrawn">Exclude already drawn</option>
       </select>
-      <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">↺ Refresh</button>
+      <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">↺ Refresh</button> -->
     </div>
     <!-- WHEEL CONTAINER -->
     <div style="position:relative;display:inline-flex;align-items:center;margin:0 auto;gap:0">
@@ -594,6 +594,13 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
           <option value=";">Semicolon ( ; )</option>
           <option value="	">Tab</option>
         </select>
+        <label style="font-size:11px;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase">Pool:</label>
+        <select id="wheel-pool" style="font-size:12px;padding:5px 8px" onchange="buildWheel()">
+          <option value="all">All checked-in guests</option>
+          <option value="custom">Custom import list</option>
+          <option value="notdrawn">Exclude already drawn</option>
+        </select>
+        <button class="btn btn-sm" onclick="buildWheel()" style="background:var(--beige);border-color:var(--beige-mid)">↺ Refresh</button>
       </div>
       <div style="border:1.5px dashed var(--beige-dark);border-radius:6px;padding:1.2rem;text-align:center;cursor:pointer;margin-bottom:.8rem" onclick="document.getElementById('draw-file-input').click()">
         <div style="font-size:24px;margin-bottom:6px">📂</div>
