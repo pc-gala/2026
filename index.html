@@ -653,7 +653,7 @@ function buildTables(list){
   var tmap={};
   list.forEach(function(g){
     var key='T'+g.tableNum;
-    if(!tmap[key])tmap[key]={id:key,num:g.tableNum,name:g.tableName,capacity:10};
+    if(!tmap[key])tmap[key]={id:key,num:g.tableNum,name:g.tableName,capacity:11};
   });
   tables=Object.values(tmap).sort(function(a,b){return a.num-b.num});
 }
@@ -1566,7 +1566,7 @@ function addGuest(){
   showToast('Guest added: '+name);
 }
 function addTable(){
-  var name=document.getElementById('t-name').value.trim();var cap=parseInt(document.getElementById('t-cap').value)||10;
+  var name=document.getElementById('t-name').value.trim();var cap=parseInt(document.getElementById('t-cap').value)||11;
   if(!name){showToast('Enter table name');return}
   tables.push({id:'T'+Date.now(),num:tables.length+1,name:name,capacity:cap});
   document.getElementById('t-name').value='';renderTblList();popTblSel();popWiTbl();showToast('Table added: '+name);
